@@ -4,10 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
-	"time"
 )
 
-func doProducer(broker string, topic string) (msg string, err error) {
+func doProducer(broker string, topic string, iso string) (msg string, err error) {
 
 	cm := kafka.ConfigMap{
 		"bootstrap.servers": broker,
@@ -37,7 +36,7 @@ func doProducer(broker string, topic string) (msg string, err error) {
 		// build the messages
 		m := kafka.Message{
 			TopicPartition: kafka.TopicPartition{Topic: &topic},
-			Value:          []byte(fmt.Sprintf("foo / %v", time.Now().Format(time.RFC1123Z))),
+			Value:          []byte(iso),
 			Headers:        []kafka.Header{{Key: "testHeader", Value: []byte("headers value are binary")}},
 		}
 
