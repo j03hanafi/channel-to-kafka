@@ -1,18 +1,19 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 )
 
-func doConsume(broker string, group string, topics []string) chan bool {
+func doConsume(broker string, group string, topics []string) (msg string, error error) {
 
-	done := make(chan bool)
+	fmt.Printf("Starting consumer\n")
 
 	cm := kafka.ConfigMap{
 		"bootstrap.servers":    broker,
 		"group.id":             group,
-		"auto.offset.reset":    "earliest",
+		"auto.offset.reset":    "latest",
 		"enable.partition.eof": true,
 	}
 
@@ -38,19 +39,16 @@ func doConsume(broker string, group string, topics []string) chan bool {
 			fmt.Printf("There's an Error subscribing to the topic:\n\t%v\n", err)
 		}
 
+		// For capturing errors from the go-routine
+		errorChan := make(chan string, 8)
+
 		doTerm := false
 
 		for !doTerm {
-			select {
-			case sig := <-done:
-				fmt.Printf("Caught signal %v: terminating\n", sig)
-				doTerm = true
-			default:
-				ev := c.Poll(1000)
-				if ev == nil {
-					continue
-				}
-
+			ev := c.Poll(1000)
+			if ev == nil {
+				continue
+			} else {
 				switch ev.(type) {
 
 				case *kafka.Message:
@@ -61,6 +59,9 @@ func doConsume(broker string, group string, topics []string) chan bool {
 						*km.TopicPartition.Topic,
 						km.TopicPartition.Partition,
 						km.TopicPartition.Offset)
+
+					msg = string(km.Value)
+
 					if km.Headers != nil {
 						fmt.Printf("Headers: %v\n", km.Headers)
 					}
@@ -78,7 +79,7 @@ func doConsume(broker string, group string, topics []string) chan bool {
 				case kafka.Error:
 					// It's an error
 					em := ev.(kafka.Error)
-					fmt.Printf("☠️ Uh oh, caught an error:\n\t%v\n", em)
+					errorChan <- fmt.Sprintf("☠️ Uh oh, caught an error:\n\t%v\n", em)
 
 				default:
 					// It's not anything we were expecting
@@ -87,7 +88,27 @@ func doConsume(broker string, group string, topics []string) chan bool {
 				}
 			}
 		}
+
+		// check error when done
+		done := false
+		var err string
+		for !done {
+			if t, o := <-errorChan; o == false {
+				done = true
+			} else {
+				err += t
+			}
+		}
+
+		if len(err) > 0 {
+			// if error not nil
+			fmt.Printf("returning an error\n")
+			return "", errors.New(err)
+		}
+		fmt.Printf("Closing consumer...\n")
 		c.Close()
 	}
-	return done
+
+	return msg, nil
+
 }
