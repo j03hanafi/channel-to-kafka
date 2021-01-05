@@ -14,7 +14,7 @@ func CreateFile(fileName string, content string) string {
 		fileName += ".txt"
 	}
 
-	file, err := os.Create("storage/response/" + fileName)
+	file, err := os.Create(fileName)
 
 	if err != nil {
 		log.Fatalf("failed creating file: %s", err)
