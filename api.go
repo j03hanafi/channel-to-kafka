@@ -7,6 +7,7 @@ func server() *mux.Router {
 
 	// endpoints
 	router.HandleFunc("/payment/channel/iso", sendIso).Methods("POST")
+	router.HandleFunc("/payment/channel/file", sendFile).Methods("POST")
 
 	return router
 }

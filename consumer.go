@@ -4,11 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
+	"log"
 )
 
 func doConsume(broker string, group string, topics []string) (msg string, error error) {
 
-	fmt.Printf("Starting consumer\n")
+	log.Printf("Starting consumer\n")
 
 	cm := kafka.ConfigMap{
 		"bootstrap.servers":    broker,
@@ -24,19 +25,19 @@ func doConsume(broker string, group string, topics []string) (msg string, error 
 		if ke, ok := err.(kafka.Error); ok == true {
 			switch ec := ke.Code(); ec {
 			case kafka.ErrInvalidArg:
-				fmt.Printf("Can't create consumer because wrong configuration (code: %d)!\n\t%v\n\nTo see the configuration options, refer to https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md\n", ec, err)
+				log.Printf("Can't create consumer because wrong configuration (code: %d)!\n\t%v\n\nTo see the configuration options, refer to https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md\n", ec, err)
 			default:
-				fmt.Printf("Can't create consumer (code: %d)!\n\t%v\n", ec, err)
+				log.Printf("Can't create consumer (code: %d)!\n\t%v\n", ec, err)
 			}
 		} else {
 			// Not Kafka Error occurs
-			fmt.Printf("Can't create consumer because generic error! \n\t%v\n", err)
+			log.Printf("Can't create consumer because generic error! \n\t%v\n", err)
 		}
 	} else {
 
 		// subscribe to the topic
 		if err := c.SubscribeTopics(topics, nil); err != nil {
-			fmt.Printf("There's an Error subscribing to the topic:\n\t%v\n", err)
+			log.Printf("There's an Error subscribing to the topic:\n\t%v\n", err)
 		}
 
 		// For capturing errors from the go-routine
@@ -54,7 +55,7 @@ func doConsume(broker string, group string, topics []string) (msg string, error 
 				case *kafka.Message:
 					// It's a message
 					km := ev.(*kafka.Message)
-					fmt.Printf("Message '%v' received from topic '%v' (partition %d at offset %d)\n",
+					log.Printf("Message '%v' received from topic '%v' (partition %d at offset %d)\n",
 						string(km.Value),
 						*km.TopicPartition.Topic,
 						km.TopicPartition.Partition,
@@ -63,12 +64,12 @@ func doConsume(broker string, group string, topics []string) (msg string, error 
 					msg = string(km.Value)
 
 					if km.Headers != nil {
-						fmt.Printf("Headers: %v\n", km.Headers)
+						log.Printf("Headers: %v\n", km.Headers)
 					}
 
 				case kafka.PartitionEOF:
 					pe := ev.(kafka.PartitionEOF)
-					fmt.Printf("Got to the end of partition %v on topic %v at offset %v\n",
+					log.Printf("Got to the end of partition %v on topic %v at offset %v\n",
 						pe.Partition,
 						*pe.Topic,
 						pe.Offset)
@@ -83,7 +84,7 @@ func doConsume(broker string, group string, topics []string) (msg string, error 
 
 				default:
 					// It's not anything we were expecting
-					fmt.Printf("Got an event that's not a Message, Error, or PartitionEOF 👻\n\t%v\n", ev)
+					log.Printf("Got an event that's not a Message, Error, or PartitionEOF 👻\n\t%v\n", ev)
 
 				}
 			}
@@ -102,10 +103,10 @@ func doConsume(broker string, group string, topics []string) (msg string, error 
 
 		if len(err) > 0 {
 			// if error not nil
-			fmt.Printf("returning an error\n")
+			log.Printf("returning an error\n")
 			return "", errors.New(err)
 		}
-		fmt.Printf("Closing consumer...\n")
+		log.Printf("Closing consumer...\n")
 		c.Close()
 	}
 
