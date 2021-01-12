@@ -1,0 +1,20 @@
+{
+  "broker": [
+    "188.166.255.175:29092"
+  ],
+  "topics": [
+    {
+      "topic": "channel-kafka",
+      "prefix": [
+        "0200"
+      ]
+    },
+    {
+      "topic": "kafka-biller",
+      "prefix": [
+        "0210"
+      ]
+    }
+  ],
+  "groups": "test-go"
+}
